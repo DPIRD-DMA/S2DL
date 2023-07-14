@@ -189,7 +189,9 @@ def fetch_product_data(
 
 
 def fetch_single_sentinel_product(
-    base_url: str, product_id: str, target_directory: Path
+    product_id: str,
+    target_directory: Path,
+    base_url: str = "https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles",
 ) -> Path:
     """
     Fetches and saves a single Sentinel-2 product's data.
