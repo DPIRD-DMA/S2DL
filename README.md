@@ -34,7 +34,10 @@ For downloading multiple products:
 from s2dl import fetch_multiple_sentinel_products
 from pathlib import Path
 
-product_ids = ["S2B_MSIL1C_20190523T150729_N0207_R082_T18MZA_20190523T183104", "...", "..."]
+product_ids = [
+    "S2B_MSIL1C_20190523T150729_N0207_R082_T18MZA_20190523T183104",
+    "S2A_MSIL1C_20230712T032521_N0509_R018_T52WFD_20230712T051642",
+]
 target_directory = Path("./data")
 
 # Fetch and save multiple Sentinel-2 products' data
