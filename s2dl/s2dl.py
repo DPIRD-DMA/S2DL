@@ -141,6 +141,7 @@ def fetch_product_data(
     latitude_band: str,
     path_number: str,
     target_directory: Path,
+    processing_level: str,
 ):
     """
     Downloads Sentinel-2 product data from a given URL and saves it to a target
@@ -160,8 +161,10 @@ def fetch_product_data(
         base_url, product_id, grid_square, latitude_band, path_number
     )
     target_directory.mkdir(parents=True, exist_ok=True)
-
-    xml_url = f"{download_url}MTD_MSIL1C.xml"
+    if processing_level == "L1C":
+        xml_url = f"{download_url}MTD_MSIL1C.xml"
+    else:
+        xml_url = f"{download_url}MTD_MSIL2A.xml"
     xml_dom_tree = get_xml(session, xml_url)
 
     image_file_nodes = xml_dom_tree.getElementsByTagName("IMAGE_FILE")
@@ -188,22 +191,69 @@ def fetch_product_data(
     return scene_dir
 
 
+def validate_product_id(product_id: str) -> None:
+    """
+    Validates a Sentinel-2 product ID.
+
+    Args:
+        product_id (str): The Sentinel-2 product ID.
+
+    Returns:
+        None
+    """
+    if not isinstance(product_id, str):
+        raise TypeError("Product ID must be a string")
+
+    if not product_id.startswith("S2"):
+        raise ValueError("Product ID must start with 'S2'")
+
+
+def get_processing_level(product_id: str) -> str:
+    """
+    Extracts the processing level from a Sentinel-2 product ID.
+
+    Args:
+        product_id (str): The Sentinel-2 product ID.
+
+    Returns:
+        str: The processing level.
+    """
+    return product_id.split("_")[1][-3:]
+
+
+def get_base_url(processing_level: str) -> str:
+    """
+    Gets the base URL for Sentinel-2 data, depending on the processing level.
+
+    Args:
+        processing_level (str): The Sentinel-2 processing level L1C or L2A.
+
+    Returns:
+        str: The base URL for Sentinel-2 data.
+    """
+    if processing_level == "L1C":
+        return "https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles"
+    else:
+        return "https://storage.googleapis.com/gcp-public-data-sentinel-2/L2/tiles"
+
+
 def fetch_single_sentinel_product(
     product_id: str,
     target_directory: Path,
-    base_url: str = "https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles",
 ) -> Path:
     """
     Fetches and saves a single Sentinel-2 product's data.
 
     Args:
-        base_url (str): The base URL for Sentinel-2 data. product_id (str): The
-        Sentinel-2 product ID. target_directory (Path): The directory where the
-        downloaded data should be saved.
+        product_id (str): The Sentinel-2 product ID. target_directory (Path):
+        The directory where the downloaded data should be saved.
 
     Returns:
         Path: The directory path where the scene data is saved.
     """
+    validate_product_id(product_id)
+    processing_level = get_processing_level(product_id)
+    base_url = get_base_url(processing_level)
     session = create_request_session()
     grid_square, latitude_band, path_number = extract_details_from_product_id(
         product_id
@@ -217,6 +267,7 @@ def fetch_single_sentinel_product(
         latitude_band,
         path_number,
         target_directory,
+        processing_level,
     )
 
     return scene_dir
@@ -225,7 +276,6 @@ def fetch_single_sentinel_product(
 def fetch_multiple_sentinel_products(
     product_ids: List[str],
     target_directory: Path,
-    base_url: str = "https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles",
 ) -> List[Path]:
     """
     Fetches and saves multiple Sentinel-2 products' data.
@@ -233,9 +283,7 @@ def fetch_multiple_sentinel_products(
     Args:
         product_ids (List[str]): A list of Sentinel-2 product IDs.
         target_directory (Path): The directory where the downloaded data should
-        be saved. base_url (str, optional): The base URL for Sentinel-2 data.
-        Defaults to
-        "https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles".
+        be saved.
 
     Returns:
         List[Path]: A list of directory paths where each scene's data is saved.
@@ -246,7 +294,6 @@ def fetch_multiple_sentinel_products(
     ):
         scene_dirs.append(
             fetch_single_sentinel_product(
-                base_url=base_url,
                 product_id=product_id,
                 target_directory=target_directory,
             )
