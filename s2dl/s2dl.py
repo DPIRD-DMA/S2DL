@@ -167,7 +167,13 @@ def fetch_product_data(
         xml_url = f"{download_url}MTD_MSIL2A.xml"
     xml_dom_tree = get_xml(session, xml_url)
 
-    image_file_nodes = xml_dom_tree.getElementsByTagName("IMAGE_FILE")
+    image_file_nodes = list(
+            filter(
+                lambda node: node.tagName in ("IMAGE_FILE_2A", "IMAGE_FILE"),
+                xml_dom_tree.getElementsByTagName("*")
+            )
+        )
+    image_file_nodes = list(filter(lambda node: "/IMG_DATA/" in node.firstChild.data, image_file_nodes))
 
     image_files_urls = [
         f"{download_url}{node.firstChild.data}.jp2" for node in image_file_nodes  # type: ignore  # noqa: E501
