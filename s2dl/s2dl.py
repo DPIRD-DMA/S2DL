@@ -7,6 +7,7 @@ from xml.dom import minidom
 
 import requests
 from tqdm.auto import tqdm
+from xml.dom.minidom import Text
 
 
 def extract_details_from_product_id(product_id: str) -> Tuple[str, str, str]:
@@ -168,25 +169,31 @@ def fetch_product_data(
     xml_dom_tree = get_xml(session, xml_url)
 
     image_file_nodes = list(
-            filter(
-                lambda node: node.tagName in ("IMAGE_FILE_2A", "IMAGE_FILE"),
-                xml_dom_tree.getElementsByTagName("*")
-            )
+        filter(
+            lambda node: node.tagName in ("IMAGE_FILE_2A", "IMAGE_FILE"),
+            xml_dom_tree.getElementsByTagName("*"),
         )
-    image_file_nodes = list(filter(lambda node: "/IMG_DATA/" in node.firstChild.data, image_file_nodes))
+    )
 
-    image_files_urls = [
-        f"{download_url}{node.firstChild.data}.jp2" for node in image_file_nodes  # type: ignore  # noqa: E501
-    ]
-    if len(image_files_urls) == 0:
+    image_file_paths = []
+    for node in image_file_nodes:
+        if (
+            node.firstChild is not None
+            and isinstance(node.firstChild, Text)
+            and "/IMG_DATA/" in node.firstChild.data
+        ):
+            image_file_paths.append(node.firstChild.data)
+
+    if len(image_file_paths) == 0:
         raise ValueError(f"Sorry we failed to find product {product_id}")
 
     scene_dir = target_directory / f"{product_id}.SAFE"
+
+    image_files_urls = [f"{download_url}{path}.jp2" for path in image_file_paths]
+    file_paths = [scene_dir / f"{path}.jp2" for path in image_file_paths]
+
     for url, file_path in tqdm(
-        zip(
-            image_files_urls,
-            [scene_dir / f"{node.firstChild.data}.jp2" for node in image_file_nodes],  # type: ignore  # noqa: E501
-        ),
+        zip(image_files_urls, file_paths),
         desc="Downloading scene data",
         leave=False,
         total=len(image_files_urls),

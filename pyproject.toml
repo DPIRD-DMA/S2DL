@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "s2dl"
+dynamic = ["version"]
+description="S2DL is a Python library for downloading Sentinel-2 L1C and L2A satellite imagery data."
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.0.0",
+    "tqdm>=4.0.0",
+]
+license = "MIT"
+readme = {file = "README.md", content-type = "text/markdown"}
+keywords = ["sentinel-2", "remote-sensing", "satellite-imagery", "download"]
+
+[tool.setuptools.dynamic]
+version = {attr = "s2dl.__version__.__version__"}
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/DPIRD-DMA/s2dl"
+
+[tool.setuptools]
+packages = ["s2dl"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B"]
